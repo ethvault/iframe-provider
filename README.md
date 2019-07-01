@@ -10,7 +10,7 @@ should check if it is being hosted in an iframe and defer to this module if the 
 
 ## Compatibility
 
-While the protocol is designed for the Ethvault DAPP browser, it is meant to be general
+While the protocol is designed for the [Ethvault DAPP browser](https://app.ethvault.dev), it is meant to be general
 and work for any iframe based DAPP browser. Contributions are welcome.
 
 ## Usage
