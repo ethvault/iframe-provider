@@ -49,7 +49,7 @@ interface JsonRpcSucessfulResponseMessage<TResult = any>
 
 interface JsonRpcError<TData = any> {
   code: number;
-  message: string;
+  reason: string;
   data?: TData;
 }
 
@@ -94,6 +94,17 @@ export interface IFrameEthereumProvider {
   on(event: 'networkChanged', handler: (networkId: string) => void): this;
 
   on(event: 'accountsChanged', handler: (accounts: string[]) => void): this;
+}
+
+class RpcError extends Error {
+  public readonly code: number;
+  public readonly reason: string;
+
+  constructor(code: number, reason: string) {
+    super(`JSON RPC returned an error code ${code}: ${reason}`);
+    this.code = code;
+    this.reason = reason;
+  }
 }
 
 export class IFrameEthereumProvider extends EventEmitter<
@@ -207,8 +218,9 @@ export class IFrameEthereumProvider extends EventEmitter<
       if (completer) {
         // Handle pending promise
         if ('error' in message) {
-          const error = new Error(message.error.message);
-          completer.reject(error);
+          completer.reject(
+            new RpcError(message.error.code, message.error.reason)
+          );
         } else if ('result' in message) {
           completer.resolve(message.result);
         }
