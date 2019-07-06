@@ -1,5 +1,7 @@
 # @ethvault/iframe-provider
 
+[![Build Status](https://travis-ci.org/ethvault/iframe-provider.svg?branch=master)](https://travis-ci.org/ethvault/iframe-provider)
+
 This is an [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) compliant Ethereum provider that
 communicates with a parent iframe.
 
@@ -18,14 +20,17 @@ and work for any iframe based DAPP browser. Contributions are welcome.
 You can use this provider exactly how you use the Metamask injected web3 provider.
 
 ```typescript
-import {IFrameEthereumProvider, isEmbeddedInIFrame} from '@ethvault/iframe-provider'
+import {
+  IFrameEthereumProvider,
+  isEmbeddedInIFrame,
+} from '@ethvault/iframe-provider';
 
 let ethereum;
 
 if (isEmbeddedInIFrame()) {
   ethereum = new IFrameEthereumProvider();
 } else {
-  // Use some other provider, e.g. window.ethereum 
+  // Use some other provider, e.g. window.ethereum
   // ...
 }
 
@@ -33,15 +38,14 @@ if (isEmbeddedInIFrame()) {
 function getNetwork(): Promise<string> {
   return ethereum.send('net_version');
 }
-
 ```
 
-You can also use this with the [ethers.js](https://github.com/ethers-io/ethers.js) library 
+You can also use this with the [ethers.js](https://github.com/ethers-io/ethers.js) library
 via the [Web3Provider](https://docs.ethers.io/ethers.js/html/api-providers.html#web3provider-inherits-from-jsonrpcprovider).
 
 ```typescript
-import {IFrameEthereumProvider} from '@ethvault/iframe-provider'
-import {Web3Provider} from 'ethers';
+import { IFrameEthereumProvider } from '@ethvault/iframe-provider';
+import { Web3Provider } from 'ethers';
 
 let web3Provider = new Web3Provider(new IFrameEthereumProvider());
 ```
@@ -49,15 +53,15 @@ let web3Provider = new Web3Provider(new IFrameEthereumProvider());
 There are some options for the construction of the ethereum provider:
 
 ```typescript
-import {IFrameEthereumProvider} from '@ethvault/iframe-provider'
+import { IFrameEthereumProvider } from '@ethvault/iframe-provider';
 
 new IFrameEthereumProvider({
   // How long to wait for the response, default 1 minute
   timeoutMilliseconds: 60000,
   // The origins with which this provider is allowed to communicate, default '*'
   // See postMessage docs https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
-  targetOrigin: 'https://app.ethvault.dev'
-}); 
+  targetOrigin: 'https://app.ethvault.dev',
+});
 ```
 
 ## Local Development
