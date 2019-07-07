@@ -1,4 +1,4 @@
-# @ethvault/iframe-provider
+# ethvault/iframe-provider
 
 [![Build Status](https://travis-ci.org/ethvault/iframe-provider.svg?branch=master)](https://travis-ci.org/ethvault/iframe-provider)
 
@@ -17,7 +17,11 @@ and work for any iframe based DAPP browser. Contributions are welcome.
 
 ## Usage
 
-You can use this provider exactly how you use the Metamask injected web3 provider.
+If you want an easy drop-in solution, consider [the polyfill package](https://github.com/ethvault/iframe-provider-polyfill).
+
+Use this package only if you want to build a custom integration with an iframe provider.
+
+You can use this provider exactly how you use the MetaMask or other wallet injected Ethereum/web3 provider. It supports both the legacy web3 sendAsync method as well as the ethereum send method.
 
 ```typescript
 import {
