@@ -62,7 +62,7 @@ interface JsonRpcSucessfulResponseMessage<TResult = any>
 
 interface JsonRpcError<TData = any> {
   code: number;
-  reason: string;
+  message: string;
   data?: TData;
 }
 
@@ -110,13 +110,21 @@ export interface IFrameEthereumProvider {
 }
 
 class RpcError extends Error {
-  public readonly code: number;
-  public readonly reason: string;
+  private readonly _code: number;
+  private readonly _message: string;
 
-  constructor(code: number, reason: string) {
-    super(`JSON RPC returned an error code ${code}: ${reason}`);
-    this.code = code;
-    this.reason = reason;
+  constructor(code: number, message: string) {
+    super();
+    this._code = code;
+    this._message = message;
+  }
+
+  get code(): number {
+    return this._code;
+  }
+
+  get message(): string {
+    return `${this._code}: ${this._message}`;
   }
 }
 
@@ -207,7 +215,7 @@ export class IFrameEthereumProvider extends EventEmitter<
     const response = await this.execute<TParams, TResult, any>(method, params);
 
     if ('error' in response) {
-      throw new RpcError(response.error.code, response.error.reason);
+      throw new RpcError(response.error.code, response.error.message);
     } else {
       return response.result;
     }
