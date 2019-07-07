@@ -5,10 +5,13 @@ const DEFAULT_TIMEOUT_MILLISECONDS = 60000;
 
 const JSON_RPC_VERSION = '2.0';
 
+/**
+ * Options for constructing the iframe ethereum provider.
+ */
 interface IFrameEthereumProviderOptions {
   // The origin to communicate with. Default '*'
   targetOrigin?: string;
-  // How long to time out waiting for responses.
+  // How long to time out waiting for responses. Default 60 seconds.
   timeoutMilliseconds?: number;
 }
 
@@ -21,9 +24,19 @@ export function isEmbeddedInIFrame(): boolean {
   return window && window.parent !== window.self;
 }
 
-interface PromiseCompleter<T = any> {
-  resolve: (result: T) => void;
-  reject: (error: Error) => void;
+/**
+ * This is what we store in the state to keep track of pending promises.
+ */
+interface PromiseCompleter<TResult, TErrorData> {
+  // A response was received (either error or result response).
+  resolve(
+    result:
+      | JsonRpcSucessfulResponseMessage<TResult>
+      | JsonRpcErrorResponseMessage<TErrorData>
+  ): void;
+
+  // An error with executing the request was encountered.
+  reject(error: Error): void;
 }
 
 type MessageId = number | string | null;
@@ -112,7 +125,9 @@ export class IFrameEthereumProvider extends EventEmitter<
 > {
   private readonly targetOrigin: string;
   private readonly timeoutMilliseconds: number;
-  private readonly completers: { [id: string]: PromiseCompleter } = {};
+  private readonly completers: {
+    [id: string]: PromiseCompleter<any, any>;
+  } = {};
 
   public constructor({
     targetOrigin = DEFAULT_TARGET_ORIGIN,
@@ -124,19 +139,22 @@ export class IFrameEthereumProvider extends EventEmitter<
     this.targetOrigin = targetOrigin;
     this.timeoutMilliseconds = timeoutMilliseconds;
 
-    // Listen for messages from the provider
-    window.addEventListener('message', this.handleJsonrpcMessage.bind(this));
+    // Listen for messages from the parent window.
+    window.addEventListener('message', this.handleParentWindowMessage);
   }
 
   /**
-   * Send the JSON RPC
-   * @param method method to send to the parent provider
-   * @param params parameters to send
+   * Helper method that handles transport and request wrapping
+   * @param method method to execute
+   * @param params params to pass the method
    */
-  public async send<TParams = any[], TResult = any>(
+  private async execute<TParams, TResult, TErrorData>(
     method: string,
-    params: TParams
-  ): Promise<TResult> {
+    params?: TParams
+  ): Promise<
+    | JsonRpcSucessfulResponseMessage<TResult>
+    | JsonRpcErrorResponseMessage<TErrorData>
+  > {
     if (!isEmbeddedInIFrame()) {
       throw new Error('Not embedded within an iframe.');
     }
@@ -149,9 +167,10 @@ export class IFrameEthereumProvider extends EventEmitter<
       params,
     };
 
-    const promise = new Promise<TResult>((resolve, reject) => {
-      this.completers[id] = { resolve, reject };
-    });
+    const promise = new Promise<
+      | JsonRpcSucessfulResponseMessage<TResult>
+      | JsonRpcErrorResponseMessage<TErrorData>
+    >((resolve, reject) => (this.completers[id] = { resolve, reject }));
 
     // Send the JSON RPC to the parent window.
     window.parent.postMessage(payload, this.targetOrigin);
@@ -172,6 +191,28 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   /**
+   * Send the JSON RPC and return the result.
+   * @param method method to send to the parent provider
+   * @param params parameters to send
+   */
+  public async send<TParams = any[], TResult = any>(
+    method: string,
+    params?: TParams
+  ): Promise<TResult> {
+    if (!isEmbeddedInIFrame()) {
+      throw new Error('Not embedded within an iframe.');
+    }
+
+    const response = await this.execute<TParams, TResult, any>(method, params);
+
+    if ('error' in response) {
+      throw new RpcError(response.error.code, response.error.reason);
+    } else {
+      return response.result;
+    }
+  }
+
+  /**
    * Backwards compatibility method for web3.
    * @param payload payload to send to the provider
    * @param callback callback to be called when the provider resolves
@@ -179,12 +220,13 @@ export class IFrameEthereumProvider extends EventEmitter<
   public async sendAsync(
     payload: { method: string; params?: any[] },
     callback: (
-      error: Error | null,
-      result: { method: string; params?: any[]; result: any } | null
+      error: string | null,
+      result: { method: string; params?: any[]; result: any } | any
     ) => void
   ): Promise<void> {
     try {
-      const result = await this.send(payload.method, payload.params);
+      const result = await this.execute(payload.method, payload.params);
+
       callback(null, result);
     } catch (error) {
       callback(error, null);
@@ -195,7 +237,7 @@ export class IFrameEthereumProvider extends EventEmitter<
    * Handle a message on the window.
    * @param event message event that will be considered if from the parent window
    */
-  private handleJsonrpcMessage(event: MessageEvent) {
+  private handleParentWindowMessage = (event: MessageEvent) => {
     const data = event.data;
 
     // No data to parse, skip.
@@ -217,12 +259,8 @@ export class IFrameEthereumProvider extends EventEmitter<
       // True if we haven't timed out and this is a response to a message we sent.
       if (completer) {
         // Handle pending promise
-        if ('error' in message) {
-          completer.reject(
-            new RpcError(message.error.code, message.error.reason)
-          );
-        } else if ('result' in message) {
-          completer.resolve(message.result);
+        if ('error' in message || 'result' in message) {
+          completer.resolve(message);
         }
 
         delete this.completers[message.id];
@@ -257,7 +295,7 @@ export class IFrameEthereumProvider extends EventEmitter<
           break;
       }
     }
-  }
+  };
 
   private emitNotification(result: any) {
     this.emit('notification', result);
