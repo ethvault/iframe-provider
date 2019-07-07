@@ -161,7 +161,7 @@ export class IFrameEthereumProvider extends EventEmitter<
       if (this.completers[id]) {
         this.completers[id].reject(
           new Error(
-            `RPC ID ${id} timed out after ${this.timeoutMilliseconds} milliseconds`
+            `RPC ID "${id}" timed out after ${this.timeoutMilliseconds} milliseconds`
           )
         );
         delete this.completers[id];
@@ -185,7 +185,7 @@ export class IFrameEthereumProvider extends EventEmitter<
   ): Promise<void> {
     try {
       const result = await this.send(payload.method, payload.params);
-      callback(null, { ...payload, result });
+      callback(null, result);
     } catch (error) {
       callback(error, null);
     }
