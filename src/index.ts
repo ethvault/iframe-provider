@@ -123,6 +123,7 @@ class RpcError extends Error {
 export class IFrameEthereumProvider extends EventEmitter<
   IFrameEthereumProviderEventTypes
 > {
+  private enabled: Promise<void> | null = null;
   private readonly targetOrigin: string;
   private readonly timeoutMilliseconds: number;
   private readonly completers: {
@@ -209,6 +210,24 @@ export class IFrameEthereumProvider extends EventEmitter<
       throw new RpcError(response.error.code, response.error.reason);
     } else {
       return response.result;
+    }
+  }
+
+  /**
+   * Request the parent window to enable access to the user's web3 provider. Return immediately if already enabled.
+   */
+  public async enable(): Promise<void> {
+    if (this.enabled === null) {
+      this.enabled = this.send('enable');
+    }
+
+    try {
+      await this.enabled;
+    } catch (error) {
+      // Reset it so the DAPP can try again.
+      this.enabled = null;
+
+      throw error;
     }
   }
 
