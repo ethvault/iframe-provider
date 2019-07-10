@@ -1,9 +1,19 @@
 import { EventEmitter } from 'eventemitter3';
 
+// By default post to any origin
 const DEFAULT_TARGET_ORIGIN = '*';
+// By default timeout is 60 seconds
 const DEFAULT_TIMEOUT_MILLISECONDS = 60000;
 
 const JSON_RPC_VERSION = '2.0';
+
+export interface MinimalEventSourceInterface {
+  addEventListener: typeof window.addEventListener;
+}
+
+export interface MinimalEventTargetInterface {
+  postMessage: typeof window.postMessage;
+}
 
 /**
  * Options for constructing the iframe ethereum provider.
@@ -13,15 +23,14 @@ interface IFrameEthereumProviderOptions {
   targetOrigin?: string;
   // How long to time out waiting for responses. Default 60 seconds.
   timeoutMilliseconds?: number;
-}
 
-/**
- * Return true if the current window context appears to be embedded within an iframe element.
- *
- * This should be checked before the provider is used.
- */
-export function isEmbeddedInIFrame(): boolean {
-  return window && window.parent !== window.self;
+  // The event source. By default we use the window. This can be mocked for tests, or it can wrap
+  // a different interface, e.g. workers.
+  eventSource?: MinimalEventSourceInterface;
+
+  // The event target. By default we use the window parent. This can be mocked for tests, or it can wrap
+  // a different interface, e.g. workers.
+  eventTarget?: MinimalEventTargetInterface;
 }
 
 /**
@@ -109,6 +118,9 @@ export interface IFrameEthereumProvider {
   on(event: 'accountsChanged', handler: (accounts: string[]) => void): this;
 }
 
+/**
+ * Represents an error in an RPC returned from the event source. Always contains a code and a message.
+ */
 class RpcError extends Error {
   private readonly _code: number;
   private readonly _message: string;
@@ -128,12 +140,17 @@ class RpcError extends Error {
   }
 }
 
+/**
+ * This is the primary artifact of this library.
+ */
 export class IFrameEthereumProvider extends EventEmitter<
   IFrameEthereumProviderEventTypes
 > {
   private enabled: Promise<void> | null = null;
   private readonly targetOrigin: string;
   private readonly timeoutMilliseconds: number;
+  private readonly eventSource: MinimalEventSourceInterface;
+  private readonly eventTarget: MinimalEventTargetInterface;
   private readonly completers: {
     [id: string]: PromiseCompleter<any, any>;
   } = {};
@@ -141,15 +158,19 @@ export class IFrameEthereumProvider extends EventEmitter<
   public constructor({
     targetOrigin = DEFAULT_TARGET_ORIGIN,
     timeoutMilliseconds = DEFAULT_TIMEOUT_MILLISECONDS,
+    eventSource = window,
+    eventTarget = window.parent,
   }: IFrameEthereumProviderOptions = {}) {
     // Call super for `this` to be defined
     super();
 
     this.targetOrigin = targetOrigin;
     this.timeoutMilliseconds = timeoutMilliseconds;
+    this.eventSource = eventSource;
+    this.eventTarget = eventTarget;
 
-    // Listen for messages from the parent window.
-    window.addEventListener('message', this.handleParentWindowMessage);
+    // Listen for messages from the event source.
+    this.eventSource.addEventListener('message', this.handleEventSourceMessage);
   }
 
   /**
@@ -164,10 +185,6 @@ export class IFrameEthereumProvider extends EventEmitter<
     | JsonRpcSucessfulResponseMessage<TResult>
     | JsonRpcErrorResponseMessage<TErrorData>
   > {
-    if (!isEmbeddedInIFrame()) {
-      throw new Error('Not embedded within an iframe.');
-    }
-
     const id = getUniqueId();
     const payload: JsonRpcRequestMessage = {
       jsonrpc: JSON_RPC_VERSION,
@@ -181,11 +198,11 @@ export class IFrameEthereumProvider extends EventEmitter<
       | JsonRpcErrorResponseMessage<TErrorData>
     >((resolve, reject) => (this.completers[id] = { resolve, reject }));
 
-    // Send the JSON RPC to the parent window.
-    window.parent.postMessage(payload, this.targetOrigin);
+    // Send the JSON RPC to the event source.
+    this.eventTarget.postMessage(payload, this.targetOrigin);
 
     // Delete the completer within the timeout and reject the promise.
-    window.setTimeout(() => {
+    setTimeout(() => {
       if (this.completers[id]) {
         this.completers[id].reject(
           new Error(
@@ -208,10 +225,6 @@ export class IFrameEthereumProvider extends EventEmitter<
     method: string,
     params?: TParams
   ): Promise<TResult> {
-    if (!isEmbeddedInIFrame()) {
-      throw new Error('Not embedded within an iframe.');
-    }
-
     const response = await this.execute<TParams, TResult, any>(method, params);
 
     if ('error' in response) {
@@ -261,10 +274,10 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   /**
-   * Handle a message on the window.
-   * @param event message event that will be considered if from the parent window
+   * Handle a message on the event source.
+   * @param event message event that will be processed by the provider
    */
-  private handleParentWindowMessage = (event: MessageEvent) => {
+  private handleEventSourceMessage = (event: MessageEvent) => {
     const data = event.data;
 
     // No data to parse, skip.
