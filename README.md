@@ -1,31 +1,34 @@
 # ethvault/iframe-provider
 
 [![Build Status](https://travis-ci.org/ethvault/iframe-provider.svg?branch=master)](https://travis-ci.org/ethvault/iframe-provider)
+[![MinZipped size](https://badgen.net/bundlephobia/minzip/@ethvault/iframe-provider)](https://bundlephobia.com/result?p=@ethvault/iframe-provider@0.1.5)
+![NPM Version](https://img.shields.io/npm/v/@ethvault/iframe-provider-polyfill.svg)
 
 This is an [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) compliant Ethereum provider that
-communicates with a parent iframe.
+communicates with a parent iframe using the [Ethereum JSON RPC](https://github.com/ethereum/wiki/wiki/JSON-RPC).
 
 ## Purpose
 
-This module is to be included whenever a DAPP is being hosted in a parent window, e.g. via `<iframe/>`.
-A site that wishes to use the provider should check whether it is being hosted in an iframe and defer to this module
-if the parent iframe responds to a ping. Alternately, the application can give the user
-an option to connect to a parent window provider.
+Use the iframe provider to enable a DAPP to communicate with an Ethereum provider in a different context.
+
+This was built to serve the DAPPs that integrate with [Ethvault](https://ethvault.xyz).
 
 ## Compatibility
 
 While the protocol is designed for the [Ethvault DAPP browser](https://ethvault.xyz), it is meant to be general
-and work for any iframe based DAPP browser. Contributions are welcome.
+and work for any iframe based DAPP browser. 
+
+Contributions are welcome.
 
 ## Usage
 
-If you want an easy drop-in solution, consider [the polyfill package](https://github.com/ethvault/iframe-provider-polyfill).
+If you want an easy drop-in solution, consider [the polyfill package](https://github.com/ethvault/iframe-provider-polyfill)
+which sets `window.web3` and `window.ethereum` to an iframe provider when the DAPP is embedded in an iframe.
 
-Use this package only if you want to build a custom integration with an iframe provider.
+Use this package if you want to give the user the option to connect to the iframe provider or another provider.
 
-You can use this provider exactly how you use the MetaMask or other wallet injected Ethereum/web3 provider. It supports
-both the legacy web3 sendAsync method as well as the ethereum send method. It also has an `enable` method which sends
-a JSON RPC with method `enable` and expects the parent to return a list of accounts.
+You can use this provider exactly how you use the MetaMask and other injected Ethereum/web3 providers. It supports
+both the legacy `sendAsync` method as well as the newer `send` method. It also has an `enable` method for compatibility with MetaMask which sends a JSON RPC with method `enable` and expects the parent to return a list of accounts in the result.
 
 ```typescript
 import { IFrameEthereumProvider } from '@ethvault/iframe-provider';
