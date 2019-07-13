@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/ethvault/iframe-provider.svg?branch=master)](https://travis-ci.org/ethvault/iframe-provider)
 [![MinZipped size](https://badgen.net/bundlephobia/minzip/@ethvault/iframe-provider)](https://bundlephobia.com/result?p=@ethvault/iframe-provider@0.1.5)
-![NPM Version](https://img.shields.io/npm/v/@ethvault/iframe-provider-polyfill.svg)
+![NPM Version](https://img.shields.io/npm/v/@ethvault/iframe-provider.svg)
 
 This is an [EIP-1193](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1193.md) compliant Ethereum provider that
 communicates with a parent iframe using the [Ethereum JSON RPC](https://github.com/ethereum/wiki/wiki/JSON-RPC).
