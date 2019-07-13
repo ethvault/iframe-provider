@@ -7,12 +7,17 @@ const DEFAULT_TIMEOUT_MILLISECONDS = 60000;
 
 const JSON_RPC_VERSION = '2.0';
 
+// The interface for the source of the events, typically the window.
 export interface MinimalEventSourceInterface {
-  addEventListener: typeof window.addEventListener;
+  addEventListener(
+    eventType: 'message',
+    handler: (message: MessageEvent) => void
+  ): void;
 }
 
+// The interface for the target of our events, typically the parent window.
 export interface MinimalEventTargetInterface {
-  postMessage: typeof window.postMessage;
+  postMessage(message: any, targetOrigin?: string): void;
 }
 
 /**
@@ -119,24 +124,20 @@ export interface IFrameEthereumProvider {
 }
 
 /**
- * Represents an error in an RPC returned from the event source. Always contains a code and a message.
+ * Represents an error in an RPC returned from the event source. Always contains a code and a reason. The message
+ * is constructed from both.
  */
-class RpcError extends Error {
-  private readonly _code: number;
-  private readonly _message: string;
+export class RpcError extends Error {
+  public readonly isRpcError: true = true;
 
-  constructor(code: number, message: string) {
-    super();
-    this._code = code;
-    this._message = message;
-  }
+  public readonly code: number;
+  public readonly reason: string;
 
-  get code(): number {
-    return this._code;
-  }
+  constructor(code: number, reason: string) {
+    super(`${code}: ${reason}`);
 
-  get message(): string {
-    return `${this._code}: ${this._message}`;
+    this.code = code;
+    this.reason = reason;
   }
 }
 
@@ -146,7 +147,7 @@ class RpcError extends Error {
 export class IFrameEthereumProvider extends EventEmitter<
   IFrameEthereumProviderEventTypes
 > {
-  private enabled: Promise<void> | null = null;
+  private enabled: Promise<string[]> | null = null;
   private readonly targetOrigin: string;
   private readonly timeoutMilliseconds: number;
   private readonly eventSource: MinimalEventSourceInterface;
@@ -190,7 +191,7 @@ export class IFrameEthereumProvider extends EventEmitter<
       jsonrpc: JSON_RPC_VERSION,
       id,
       method,
-      params,
+      ...(typeof params === 'undefined' ? null : { params }),
     };
 
     const promise = new Promise<
@@ -235,21 +236,22 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   /**
-   * Request the parent window to enable access to the user's web3 provider. Return immediately if already enabled.
+   * Request the parent window to enable access to the user's web3 provider. Return accounts list immediately if already enabled.
    */
-  public async enable(): Promise<void> {
+  public async enable(): Promise<string[]> {
     if (this.enabled === null) {
-      this.enabled = this.send('enable');
+      const promise = (this.enabled = this.send('enable').catch(error => {
+        // Clear this.enabled if it's this promise so we try again next call.
+        // this.enabled might be set from elsewhere if, e.g. the accounts changed event is emitted
+        if (this.enabled === promise) {
+          this.enabled = null;
+        }
+        // Rethrow the error.
+        throw error;
+      }));
     }
 
-    try {
-      await this.enabled;
-    } catch (error) {
-      // Reset it so the DAPP can try again.
-      this.enabled = null;
-
-      throw error;
-    }
+    return this.enabled;
   }
 
   /**
@@ -301,6 +303,10 @@ export class IFrameEthereumProvider extends EventEmitter<
         // Handle pending promise
         if ('error' in message || 'result' in message) {
           completer.resolve(message);
+        } else {
+          completer.reject(
+            new Error('Response from provider did not have error or result key')
+          );
         }
 
         delete this.completers[message.id];
@@ -342,6 +348,11 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   private emitConnect() {
+    // If the provider isn't enabled but it emits a connect event, assume that it's enabled and initialize
+    // with an empty list of accounts.
+    if (this.enabled === null) {
+      this.enabled = Promise.resolve([]);
+    }
     this.emit('connect');
   }
 
@@ -358,6 +369,7 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   private emitAccountsChanged(accounts: string[]) {
+    this.enabled = Promise.resolve(accounts);
     this.emit('accountsChanged', accounts);
   }
 }
