@@ -7,12 +7,14 @@ communicates with a parent iframe.
 
 ## Purpose
 
-This module is to be included whenever a DAPP is being hosted in a parent site. A site that wishes to integrate
-should check if it is being hosted in an iframe and defer to this module if the parent iframe responds to a ping.
+This module is to be included whenever a DAPP is being hosted in a parent window, e.g. via `<iframe/>`.
+A site that wishes to use the provider should check whether it is being hosted in an iframe and defer to this module
+if the parent iframe responds to a ping. Alternately, the application can give the user
+an option to connect to a parent window provider.
 
 ## Compatibility
 
-While the protocol is designed for the [Ethvault DAPP browser](https://app.ethvault.dev), it is meant to be general
+While the protocol is designed for the [Ethvault DAPP browser](https://ethvault.xyz), it is meant to be general
 and work for any iframe based DAPP browser. Contributions are welcome.
 
 ## Usage
@@ -21,20 +23,24 @@ If you want an easy drop-in solution, consider [the polyfill package](https://gi
 
 Use this package only if you want to build a custom integration with an iframe provider.
 
-You can use this provider exactly how you use the MetaMask or other wallet injected Ethereum/web3 provider. It supports both the legacy web3 sendAsync method as well as the ethereum send method.
+You can use this provider exactly how you use the MetaMask or other wallet injected Ethereum/web3 provider. It supports
+both the legacy web3 sendAsync method as well as the ethereum send method. It also has an `enable` method which sends
+a JSON RPC with method `enable` and expects the parent to return a list of accounts.
 
 ```typescript
-import {
-  IFrameEthereumProvider,
-  isEmbeddedInIFrame,
-} from '@ethvault/iframe-provider';
+import { IFrameEthereumProvider } from '@ethvault/iframe-provider';
 
 let ethereum;
 
-if (isEmbeddedInIFrame()) {
+function isIframe(): boolean {
+  /// Do some logic...
+  return true;
+}
+
+if (isIframe()) {
   ethereum = new IFrameEthereumProvider();
 } else {
-  // Use some other provider, e.g. window.ethereum
+  // Use some other provider, e.g. window.ethereum from MetaMask or Infura
   // ...
 }
 
@@ -64,7 +70,7 @@ new IFrameEthereumProvider({
   timeoutMilliseconds: 60000,
   // The origins with which this provider is allowed to communicate, default '*'
   // See postMessage docs https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
-  targetOrigin: 'https://app.ethvault.dev',
+  targetOrigin: 'https://ethvault.xyz',
 });
 ```
 
