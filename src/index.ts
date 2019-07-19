@@ -147,6 +147,27 @@ export class RpcError extends Error {
 export class IFrameEthereumProvider extends EventEmitter<
   IFrameEthereumProviderEventTypes
 > {
+  /**
+   * Differentiate this provider from other providers by providing an isIFrame property that always returns true.
+   */
+  public get isIFrame(): true {
+    return true;
+  }
+
+  /**
+   * Always return this for web3.
+   */
+  public get web3(): IFrameEthereumProvider {
+    return this;
+  }
+
+  /**
+   * Always return this for currentProvider.
+   */
+  public get currentProvider(): IFrameEthereumProvider {
+    return this;
+  }
+
   private enabled: Promise<string[]> | null = null;
   private readonly targetOrigin: string;
   private readonly timeoutMilliseconds: number;
