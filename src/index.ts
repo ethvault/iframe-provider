@@ -155,13 +155,6 @@ export class IFrameEthereumProvider extends EventEmitter<
   }
 
   /**
-   * Always return this for web3.
-   */
-  public get web3(): IFrameEthereumProvider {
-    return this;
-  }
-
-  /**
    * Always return this for currentProvider.
    */
   public get currentProvider(): IFrameEthereumProvider {

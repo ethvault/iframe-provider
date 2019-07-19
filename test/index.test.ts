@@ -53,14 +53,6 @@ describe('IFrameEthereumProvider', () => {
       expect(provider.isIFrame).toEqual(true);
     });
 
-    test('#web3', () => {
-      expect(provider.web3).toEqual(provider);
-    });
-
-    test('#web3.currentProvider', () => {
-      expect(provider.web3.currentProvider).toEqual(provider);
-    });
-
     test('#currentProvider', () => {
       expect(provider.currentProvider).toEqual(provider);
     });
