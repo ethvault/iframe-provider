@@ -9,21 +9,21 @@ communicates with a parent iframe using the [Ethereum JSON RPC](https://github.c
 
 ## Purpose
 
-Use the iframe provider to enable a DAPP to communicate with an Ethereum provider in a different context.
+Use the iframe provider to enable a dApp to communicate with an Ethereum provider in a different context.
 
-This was built to serve the DAPPs that integrate with [Ethvault](https://ethvault.xyz).
+This was built to serve the dApps that integrate with [Ethvault](https://ethvault.xyz).
 
 ## Compatibility
 
-While the protocol is designed for the [Ethvault DAPP browser](https://ethvault.xyz), it is meant to be general
-and work for any iframe based DAPP browser. 
+While the protocol is designed for the [Ethvault dApp browser](https://ethvault.xyz), it is meant to be general
+and work for any iframe based dApp browser.
 
 Contributions are welcome.
 
 ## Usage
 
 If you want an easy drop-in solution, consider [the polyfill package](https://github.com/ethvault/iframe-provider-polyfill)
-which sets `window.web3` and `window.ethereum` to an iframe provider when the DAPP is embedded in an iframe.
+which sets `window.web3` and `window.ethereum` to an iframe provider when the dApp is embedded in an iframe.
 
 Use this package if you want to give the user the option to connect to the iframe provider or another provider.
 
