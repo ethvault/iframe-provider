@@ -67,7 +67,7 @@ describe('IFrameEthereumProvider', () => {
       expect(message.payload.jsonrpc).toEqual('2.0');
       expect(message.payload.method).toEqual('enable');
       expect(message.payload.params).toBeUndefined();
-      expect(typeof message.payload.id).toBe('string');
+      expect(typeof message.payload.id).toBe('number');
     });
 
     test('returns accounts if the parent responds', async () => {
@@ -106,7 +106,7 @@ describe('IFrameEthereumProvider', () => {
       provider.send('eth_sign', ['hello', 'world']);
       const message = parent.received[0];
 
-      expect(typeof message.payload.id).toBe('string');
+      expect(typeof message.payload.id).toBe('number');
       expect(message.payload.method).toBe('eth_sign');
       expect(message.payload.params).toStrictEqual(['hello', 'world']);
       expect(message.payload.jsonrpc).toBe('2.0');
@@ -155,7 +155,7 @@ describe('IFrameEthereumProvider', () => {
       );
       const message = parent.received[0];
 
-      expect(typeof message.payload.id).toBe('string');
+      expect(typeof message.payload.id).toBe('number');
       expect(message.payload.method).toBe('eth_sign');
       expect(message.payload.params).toStrictEqual(['hello', 'world']);
       expect(message.payload.jsonrpc).toBe('2.0');

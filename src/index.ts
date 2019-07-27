@@ -94,8 +94,8 @@ type ReceivedMessageType =
  * We return a random number between the 0 and the maximum safe integer so that we always generate a unique identifier,
  * across all communication channels.
  */
-function getUniqueId(): string {
-  return '' + Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+function getUniqueId(): number {
+  return Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
 }
 
 export type IFrameEthereumProviderEventTypes =
