@@ -11,11 +11,11 @@ communicates with a parent iframe using the [Ethereum JSON RPC](https://github.c
 
 Use the iframe provider to enable a dApp to communicate with an Ethereum provider in a different context.
 
-This was built to serve the dApps that integrate with [Ethvault](https://ethvault.xyz).
+This was built to serve the dApps that integrate with [Ethvault](https://myethvault.com).
 
 ## Compatibility
 
-While the protocol is designed for the [Ethvault dApp browser](https://ethvault.xyz), it is meant to be general
+While the protocol is designed for the [Ethvault dApp browser](https://myethvault.com), it is meant to be general
 and work for any iframe based dApp browser.
 
 Contributions are welcome.
@@ -73,7 +73,7 @@ new IFrameEthereumProvider({
   timeoutMilliseconds: 60000,
   // The origins with which this provider is allowed to communicate, default '*'
   // See postMessage docs https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
-  targetOrigin: 'https://ethvault.xyz',
+  targetOrigin: 'https://myethvault.com',
 });
 ```
 
